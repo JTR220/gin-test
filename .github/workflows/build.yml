@@ -7,21 +7,35 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  sonarqube:
+  sonarcloud:
     name: SonarCloud Scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21' # Ajuste selon ta version
+
+      # Étape cruciale pour le Go : générer le rapport de couverture (optionnel mais recommandé)
+      - name: Run tests
+        run: go test -v -coverprofile=coverage.out ./...
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v3.1.0 # Utilise la version Cloud
+        uses: SonarSource/sonarcloud-github-action@v3.1.0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.organization=jtr220
             -Dsonar.projectKey=JTR220_gin-test
+            -Dsonar.organization=jtr220
             -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.sources=.
+            -Dsonar.go.tests.reportPath=report.xml
+            -Dsonar.go.coverage.reportPaths=coverage.out
+            -Dsonar.exclusions=**/*_test.go
